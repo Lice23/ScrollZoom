@@ -1,0 +1,8 @@
+{
+  "name": "scrollzoom",
+  "version-string": "1.0.0",
+  "description": "Mouse wheel zoom control for Fallout 4 iron sights",
+  "homepage": "https://github.com/EnclaveShrew/ScrollZoom",
+  "license": "MIT",
+  "dependencies": []
+}

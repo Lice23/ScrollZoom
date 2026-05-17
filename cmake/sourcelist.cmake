@@ -1,0 +1,12 @@
+set(SOURCES
+	src/PCH.h
+	src/main.cpp
+	src/Settings.h
+	src/Settings.cpp
+	src/InputHandler.h
+	src/InputHandler.cpp
+	src/TullFrameworkCompat.h
+	src/TullFrameworkCompat.cpp
+	src/ZoomController.h
+	src/ZoomController.cpp
+)
