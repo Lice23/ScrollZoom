@@ -27,16 +27,24 @@ void Settings::Load()
 
     stepSize = static_cast<float>(ini.GetDoubleValue("General", "fStepSize", 0.5));
     minZoomRatio = static_cast<float>(ini.GetDoubleValue("General", "fMinZoomRatio", 0.5));
+    maxZoomRatio = static_cast<float>(ini.GetDoubleValue("General", "fMaxZoomRatio", 1.0));
     startZoom = static_cast<std::int32_t>(ini.GetLongValue("General", "iStartZoom", 0));
     minFovMult = static_cast<float>(ini.GetDoubleValue("General", "fMinFovMult", 3.0));
     debugLogging = ini.GetBoolValue("General", "bDebugLogging", false);
 
+    if (maxZoomRatio < minZoomRatio)
+    {
+        logger::warn("fMaxZoomRatio ({:.2f}) is below fMinZoomRatio ({:.2f}); clamping to fMinZoomRatio", maxZoomRatio,
+                     minZoomRatio);
+        maxZoomRatio = minZoomRatio;
+    }
+
     const char *rawOMODs = ini.GetValue("General", "sExcludedOMODs", "");
     ParseExcludedOMODs(rawOMODs);
 
-    logger::info(
-        "Settings loaded: stepSize={:.2f}, minZoomRatio={:.2f}, startZoom={}, minFovMult={:.2f}, debugLogging={}",
-        stepSize, minZoomRatio, startZoom, minFovMult, debugLogging);
+    logger::info("Settings loaded: stepSize={:.2f}, minZoomRatio={:.2f}, maxZoomRatio={:.2f}, startZoom={}, "
+                 "minFovMult={:.2f}, debugLogging={}",
+                 stepSize, minZoomRatio, maxZoomRatio, startZoom, minFovMult, debugLogging);
 }
 
 void Settings::ResolveExcludedOMODs()

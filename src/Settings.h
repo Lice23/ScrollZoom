@@ -12,6 +12,7 @@ struct Settings
 {
     float stepSize{0.5f};
     float minZoomRatio{0.5f};
+    float maxZoomRatio{1.0f};
     std::int32_t startZoom{0};
     float minFovMult{3.0f};
     bool debugLogging{false};

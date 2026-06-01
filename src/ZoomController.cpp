@@ -301,14 +301,15 @@ void OnIronSightsEnter()
     g_zoomState.isActive = true;
 
     float minFov = fovMult * settings->minZoomRatio;
+    float maxFov = fovMult * settings->maxZoomRatio;
     float savedFovMult = 0.0f;
     bool legacyFallback = false;
     if (TryGetSavedZoom(key, savedFovMult, legacyFallback))
     {
-        g_zoomState.currentFovMult = std::clamp(savedFovMult, minFov, fovMult);
+        g_zoomState.currentFovMult = std::clamp(savedFovMult, minFov, maxFov);
         logger::debug("OnIronSightsEnter: restored saved={:.3f}, clamped={:.3f}, original={:.3f}, minFov={:.3f}, "
-                      "weaponFormID={:08X}, aimMode={}, scopeSig={:08X}, legacyFallback={}",
-                      savedFovMult, g_zoomState.currentFovMult, fovMult, minFov, key.weaponFormID,
+                      "maxFov={:.3f}, weaponFormID={:08X}, aimMode={}, scopeSig={:08X}, legacyFallback={}",
+                      savedFovMult, g_zoomState.currentFovMult, fovMult, minFov, maxFov, key.weaponFormID,
                       GetAimModeName(g_currentAimMode), key.scopeOMODSignature, legacyFallback);
     }
     else
@@ -316,19 +317,19 @@ void OnIronSightsEnter()
         switch (settings->startZoom)
         {
         case 1:
-            g_zoomState.currentFovMult = (fovMult + minFov) * 0.5f;
+            g_zoomState.currentFovMult = (maxFov + minFov) * 0.5f;
             break;
         case 2:
-            g_zoomState.currentFovMult = fovMult;
+            g_zoomState.currentFovMult = maxFov;
             break;
         default:
             g_zoomState.currentFovMult = minFov;
             break;
         }
-        logger::debug("OnIronSightsEnter: no saved, start={:.3f}, original={:.3f}, minFov={:.3f}, weaponFormID={:08X}, "
-                      "aimMode={}, scopeSig={:08X}",
-                      g_zoomState.currentFovMult, fovMult, minFov, key.weaponFormID, GetAimModeName(g_currentAimMode),
-                      key.scopeOMODSignature);
+        logger::debug("OnIronSightsEnter: no saved, start={:.3f}, original={:.3f}, minFov={:.3f}, maxFov={:.3f}, "
+                      "weaponFormID={:08X}, aimMode={}, scopeSig={:08X}",
+                      g_zoomState.currentFovMult, fovMult, minFov, maxFov, key.weaponFormID,
+                      GetAimModeName(g_currentAimMode), key.scopeOMODSignature);
     }
 
     info.zoomData->zoomData.fovMult = g_zoomState.currentFovMult;
@@ -366,8 +367,8 @@ void OnScrollWheel(bool a_zoomOut)
     }
     else
     {
-        g_zoomState.currentFovMult =
-            (std::min)(g_zoomState.currentFovMult + settings->stepSize, g_zoomState.originalFovMult);
+        float maxFovMult = g_zoomState.originalFovMult * settings->maxZoomRatio;
+        g_zoomState.currentFovMult = (std::min)(g_zoomState.currentFovMult + settings->stepSize, maxFovMult);
     }
 
     g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;
