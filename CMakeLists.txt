@@ -76,13 +76,17 @@ set(Boost_USE_STATIC_LIBS ON)
 
 set(
 	CommonLibF4Unified_DIR
-	"D:/CommonLibF4-Unified/cmake"
+	"C:/C++ Projects/CommonLibF4-Unified/cmake"
 	CACHE PATH
 	"Path to the CommonLibF4 Unified CMake package"
+	FORCE
 )
 
 find_package(CommonLibF4Unified REQUIRED CONFIG)
-include("${CMAKE_CURRENT_SOURCE_DIR}/../tools/cmake/CommonLibF4Projects.cmake")
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/simpleini)
+
+#include("${CMAKE_CURRENT_SOURCE_DIR}/../tools/cmake/CommonLibF4Projects.cmake")
 
 # ---- Add source files ----
 
@@ -127,12 +131,13 @@ target_include_directories(
 		${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-commonlibf4_projects_add_simpleini(${PROJECT_NAME})
+#commonlibf4_projects_add_simpleini(${PROJECT_NAME})
 
 target_link_libraries(
 	${PROJECT_NAME}
 	PRIVATE
 		CommonLibF4Unified::CommonLibF4
+		SimpleIni::SimpleIni
 )
 
 commonlibf4_unified_add_plugin_version(
