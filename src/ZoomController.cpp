@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <vector>
 
+// TODO: Initial zoom still going below 1.0f
+// TODO: Revise step calculation
+
 namespace ScrollZoom
 {
 namespace
@@ -213,6 +216,75 @@ bool HasExcludedOMOD()
     return excluded;
 }
 
+const RE::BGSKeyword* findKeywordByString(RE::TESObjectWEAP::InstanceData *instance, std::string str) {
+    const RE::BGSKeyword* result;
+    instance->keywords->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
+        if (a_keyword->formEditorID.contains(str)) {
+            result = a_keyword;
+            return RE::BSContainer::ForEachResult::kStop;
+        }
+        return RE::BSContainer::ForEachResult::kContinue;
+    });
+
+    return result;
+}
+
+float getFloatFromKeyword(const std::string& str, const std::string& kw)
+{
+    const std::string prefix = kw + "_";
+
+    if (!str.starts_with(prefix)) {
+        return -1.0f;
+    }
+
+    std::string valuePart = str.substr(prefix.length());
+
+    // Find the optional separator between whole and fractional parts
+    size_t underscorePos = valuePart.find('_');
+
+    std::string wholePart;
+    std::string fracPart = "0";
+
+    if (underscorePos == std::string::npos) {
+        // Format: <prefix>_<integer>
+        wholePart = valuePart;
+    } else {
+        // Reject more than one separator underscore
+        if (valuePart.find('_', underscorePos + 1) != std::string::npos) {
+            return -1.0f;
+        }
+
+        wholePart = valuePart.substr(0, underscorePos);
+        fracPart = valuePart.substr(underscorePos + 1);
+
+        // Empty fractional part means 0
+        if (fracPart.empty()) {
+            fracPart = "0";
+        }
+    }
+
+    // Whole part must exist
+    if (wholePart.empty()) {
+        return -1.0f;
+    }
+
+    auto isDigits = [](const std::string& s)
+    {
+        for (char c : s) {
+            if (!std::isdigit(static_cast<unsigned char>(c))) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (!isDigits(wholePart) || !isDigits(fracPart)) {
+        return -1.0f;
+    }
+
+    return std::stof(wholePart + "." + fracPart);
+}
+
 WeaponZoomInfo GetEquippedWeaponZoomInfo()
 {
     auto *player = RE::PlayerCharacter::GetSingleton();
@@ -239,8 +311,42 @@ WeaponZoomInfo GetEquippedWeaponZoomInfo()
         return {};
     }
 
+    std::string init, min, max, step;
+    float initF = -1.0f, minF = -1.0f, maxF = -1.0f, stepF = -1.0f;
+    instance->keywords->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
+        if(!init.empty() && !min.empty() && !max.empty() && !step.empty()) {
+            return RE::BSContainer::ForEachResult::kStop;
+        }
+
+        if (a_keyword->formEditorID.contains(ZOOM_KW_INIT)) {
+            init = a_keyword->formEditorID;
+            initF = getFloatFromKeyword(init, ZOOM_KW_INIT);
+            logger::info("init: {}", initF);
+        }
+
+        if (a_keyword->formEditorID.contains(ZOOM_KW_MIN)) {
+            min = a_keyword->formEditorID;
+            minF = getFloatFromKeyword(min, ZOOM_KW_MIN);
+            logger::info("min: {}", minF);
+        }
+
+        if (a_keyword->formEditorID.contains(ZOOM_KW_MAX)) {
+            max = a_keyword->formEditorID;
+            maxF = getFloatFromKeyword(max, ZOOM_KW_MAX);
+            logger::info("max: {}", maxF);
+        }
+
+        if (a_keyword->formEditorID.contains(ZOOM_KW_STEP)) {
+            step = a_keyword->formEditorID;
+            stepF = getFloatFromKeyword(step, ZOOM_KW_STEP);
+            logger::info("step: {}", stepF);
+        }
+
+        return RE::BSContainer::ForEachResult::kContinue;
+    });
+
     const auto scopeOMODSignature = BuildScopeOMODSignature(player, item.item.object);
-    return {instance->zoomData, item.item.object->GetFormID(), scopeOMODSignature};
+    return {instance->zoomData, item.item.object->GetFormID(), scopeOMODSignature, initF, minF, maxF, stepF};
 }
 
 bool IsPlayerInIronSights()
@@ -288,21 +394,27 @@ void OnIronSightsEnter()
         return;
     }
 
-    float fovMult = info.zoomData->zoomData.fovMult;
-    if (fovMult < settings->minFovMult)
+    float fovMult = info.scopeInit != -1.0f ? info.scopeInit : info.zoomData->zoomData.fovMult;
+
+    // Re-enable later?
+    /* if (fovMult < settings->minFovMult)
     {
         return;
-    }
+    } */
 
     const auto key = MakeZoomKey(info);
     g_zoomState.originalFovMult = fovMult;
     g_zoomState.cachedZoomData = info.zoomData;
     g_zoomState.activeKey = key;
     g_zoomState.isActive = true;
+    g_zoomState.scopeInit = info.scopeInit;
+    g_zoomState.scopeMin = info.scopeMin;
+    g_zoomState.scopeMax = info.scopeMax;
+    g_zoomState.scopeStep = info.scopeStep;
 
-    float minFov = fovMult * settings->minZoomRatio;
-    float maxFov = fovMult * settings->maxZoomRatio;
-    float savedFovMult = 0.0f;
+    float minFov = std::max(g_zoomState.scopeMin != -1.0f ? g_zoomState.scopeMin : fovMult * settings->minZoomRatio, 1.0f);
+    float maxFov = g_zoomState.scopeMax != -1.0f ? g_zoomState.scopeMax : fovMult * settings->maxZoomRatio;
+    float savedFovMult = 1.0f;
     bool legacyFallback = false;
     if (TryGetSavedZoom(key, savedFovMult, legacyFallback))
     {
@@ -314,18 +426,25 @@ void OnIronSightsEnter()
     }
     else
     {
-        switch (settings->startZoom)
-        {
-        case 1:
-            g_zoomState.currentFovMult = (maxFov + minFov) * 0.5f;
-            break;
-        case 2:
-            g_zoomState.currentFovMult = maxFov;
-            break;
-        default:
-            g_zoomState.currentFovMult = minFov;
-            break;
+        if(info.scopeInit != -1.0f) {
+            g_zoomState.currentFovMult = info.scopeInit;
         }
+        else {
+            switch (settings->startZoom)
+            {
+                case 1:
+                    g_zoomState.currentFovMult = (maxFov + minFov) * 0.5f;
+                    break;
+                case 2:
+                    g_zoomState.currentFovMult = maxFov;
+                    break;
+                default:
+                    // fovMult cannot be lower than 1.0
+                    g_zoomState.currentFovMult = (std::max)(minFov, 1.0f);
+                    break;
+            }
+        }
+        
         logger::debug("OnIronSightsEnter: no saved, start={:.3f}, original={:.3f}, minFov={:.3f}, maxFov={:.3f}, "
                       "weaponFormID={:08X}, aimMode={}, scopeSig={:08X}",
                       g_zoomState.currentFovMult, fovMult, minFov, maxFov, key.weaponFormID,
@@ -362,13 +481,26 @@ void OnScrollWheel(bool a_zoomOut)
 
     if (a_zoomOut)
     {
-        float minFovMult = g_zoomState.originalFovMult * settings->minZoomRatio;
-        g_zoomState.currentFovMult = (std::max)(g_zoomState.currentFovMult - settings->stepSize, minFovMult);
+        // fovMult cannot be lower than 1.0
+        float minFovMult = g_zoomState.scopeMin != -1.0f ? 
+            g_zoomState.scopeMin : 
+            g_zoomState.originalFovMult * settings->minZoomRatio;
+        minFovMult = std::max(minFovMult, 1.0f);
+        
+        float stepped = g_zoomState.scopeStep != -1.0f ? 
+            g_zoomState.currentFovMult - g_zoomState.scopeStep : 
+            g_zoomState.currentFovMult - settings->stepSize;
+        g_zoomState.currentFovMult = (std::max)(stepped, minFovMult);
     }
     else
     {
-        float maxFovMult = g_zoomState.originalFovMult * settings->maxZoomRatio;
-        g_zoomState.currentFovMult = (std::min)(g_zoomState.currentFovMult + settings->stepSize, maxFovMult);
+        float maxFovMult = g_zoomState.scopeMax != -1.0f ?
+            g_zoomState.scopeMax :
+            g_zoomState.originalFovMult * settings->maxZoomRatio;
+            float stepped = g_zoomState.scopeStep != -1.0f ? 
+                g_zoomState.currentFovMult + g_zoomState.scopeStep : 
+                g_zoomState.currentFovMult + settings->stepSize;
+        g_zoomState.currentFovMult = (std::min)(stepped, maxFovMult);
     }
 
     g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;

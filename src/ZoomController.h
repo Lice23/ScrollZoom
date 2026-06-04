@@ -54,20 +54,32 @@ struct WeaponZoomInfo
     RE::BGSZoomData *zoomData{nullptr};
     std::uint32_t weaponFormID{0};
     std::uint32_t scopeOMODSignature{0};
+    float scopeInit{-1.0f};
+    float scopeMin{-1.0f};
+    float scopeMax{-1.0f};
+    float scopeStep{-1.0f};
 };
 
 struct ZoomState
 {
-    float originalFovMult{0.0f};
+    float originalFovMult{1.0f};
     float currentFovMult{1.0f};
+    float scopeInit{-1.0f};
+    float scopeMin{-1.0f};
+    float scopeMax{-1.0f};
+    float scopeStep{-1.0f};
     RE::BGSZoomData *cachedZoomData{nullptr};
     ZoomKey activeKey{};
     bool isActive{false};
 
     void Reset()
     {
-        originalFovMult = 0.0f;
+        originalFovMult = 1.0f;
         currentFovMult = 1.0f;
+        scopeInit = -1.0f;
+        scopeMin = -1.0f;
+        scopeMax = -1.0f;
+        scopeStep = -1.0f;
         cachedZoomData = nullptr;
         activeKey = {};
         isActive = false;
@@ -78,6 +90,12 @@ inline ZoomState g_zoomState;
 inline AimMode g_currentAimMode{AimMode::kNormal};
 inline std::unordered_map<ZoomKey, float, ZoomKeyHash> g_savedZoomLevels;
 
+const std::string ZOOM_KW_INIT = "dn_ScrollZoom_Init";
+const std::string ZOOM_KW_MAX = "dn_ScrollZoom_Max";
+const std::string ZOOM_KW_MIN = "dn_ScrollZoom_Min";
+const std::string ZOOM_KW_STEP = "dn_ScrollZoom_Step";
+
+float getFloatFromKeyword(const std::string& str, const std::string& kw);
 WeaponZoomInfo GetEquippedWeaponZoomInfo();
 bool HasExcludedOMOD();
 bool IsPlayerInIronSights();
