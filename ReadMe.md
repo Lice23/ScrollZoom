@@ -36,11 +36,7 @@ Follow the installation and build instructions.
 
 https://github.com/brofield/simpleini
 
-Simply clone to the same folder that contains ScrollZoom.
-
-    - Root Folder
-    	- simpleini
-    	- ScrollZoom
+Clone to the ScrollZoom/lib/simpleini.
 
 
 
