@@ -75,4 +75,5 @@ Make sure your cmake and xmake are using the same compiler otherwise you'll have
 Don't forget to copy the ScrollZoom.dll (and .ini in the root folder if you don't have it yet) from /build to your F4SE plugin installation folder (Data/F4SE/Plugins). 
 
 ### Current Known Issues:
-As it stands, zooming to 1.0x doesn't update the zoom properly until you stop ADSing and start ADSing again, still looking into what's causing that and how to fix it. Aside from that, it works as intended!
+For some reason setting the fovMult to 1.0 doesn't update the fov ingame, so as a workaround the minimum fov is 1.01. Aside from that, it works as intended!
+I disabled the minimum fovMult check for now, but I might reenable it later, at least as a backup.
