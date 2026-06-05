@@ -49,25 +49,38 @@ struct ZoomKeyHash
     }
 };
 
+struct ScopeParams
+{
+    float init{-1.0f};
+    float min{-1.0f};
+    float max{-1.0f};
+    float step{-1.0f};
+    bool isValid{false};
+
+    ScopeParams() {}
+
+    ScopeParams(float initP, float minP, float maxP, float stepP) {
+        init = initP;
+        min = minP;
+        max = maxP;
+        step = stepP;
+        isValid = ((initP != -1.0f) && (minP != -1.0f) && (maxP != -1.0f) && (stepP != -1.0f));
+    }
+};
+
 struct WeaponZoomInfo
 {
     RE::BGSZoomData *zoomData{nullptr};
     std::uint32_t weaponFormID{0};
     std::uint32_t scopeOMODSignature{0};
-    float scopeInit{-1.0f};
-    float scopeMin{-1.0f};
-    float scopeMax{-1.0f};
-    float scopeStep{-1.0f};
+    ScopeParams scopeParams;
 };
 
 struct ZoomState
 {
     float originalFovMult{1.0f};
     float currentFovMult{1.0f};
-    float scopeInit{-1.0f};
-    float scopeMin{-1.0f};
-    float scopeMax{-1.0f};
-    float scopeStep{-1.0f};
+    ScopeParams scopeParams;
     RE::BGSZoomData *cachedZoomData{nullptr};
     ZoomKey activeKey{};
     bool isActive{false};
@@ -76,10 +89,7 @@ struct ZoomState
     {
         originalFovMult = 1.0f;
         currentFovMult = 1.0f;
-        scopeInit = -1.0f;
-        scopeMin = -1.0f;
-        scopeMax = -1.0f;
-        scopeStep = -1.0f;
+        scopeParams = ScopeParams();
         cachedZoomData = nullptr;
         activeKey = {};
         isActive = false;

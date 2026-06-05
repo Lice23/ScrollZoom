@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <vector>
 
-// TODO: Initial zoom still going below 1.0f
-// TODO: Revise step calculation
+// TODO: Zoom reaches 1.0f, but doesn't update fov ingame
 
 namespace ScrollZoom
 {
@@ -321,32 +320,32 @@ WeaponZoomInfo GetEquippedWeaponZoomInfo()
         if (a_keyword->formEditorID.contains(ZOOM_KW_INIT)) {
             init = a_keyword->formEditorID;
             initF = getFloatFromKeyword(init, ZOOM_KW_INIT);
-            logger::info("init: {}", initF);
+            logger::debug("init: {:.1f}", initF);
         }
 
         if (a_keyword->formEditorID.contains(ZOOM_KW_MIN)) {
             min = a_keyword->formEditorID;
             minF = getFloatFromKeyword(min, ZOOM_KW_MIN);
-            logger::info("min: {}", minF);
+            logger::debug("min: {:.1f}", minF);
         }
 
         if (a_keyword->formEditorID.contains(ZOOM_KW_MAX)) {
             max = a_keyword->formEditorID;
             maxF = getFloatFromKeyword(max, ZOOM_KW_MAX);
-            logger::info("max: {}", maxF);
+            logger::debug("max: {:.1f}", maxF);
         }
 
         if (a_keyword->formEditorID.contains(ZOOM_KW_STEP)) {
             step = a_keyword->formEditorID;
             stepF = getFloatFromKeyword(step, ZOOM_KW_STEP);
-            logger::info("step: {}", stepF);
+            logger::debug("step: {:.1f}", stepF);
         }
 
         return RE::BSContainer::ForEachResult::kContinue;
     });
 
     const auto scopeOMODSignature = BuildScopeOMODSignature(player, item.item.object);
-    return {instance->zoomData, item.item.object->GetFormID(), scopeOMODSignature, initF, minF, maxF, stepF};
+    return {instance->zoomData, item.item.object->GetFormID(), scopeOMODSignature, ScopeParams(initF, minF, maxF, stepF)};
 }
 
 bool IsPlayerInIronSights()
@@ -387,14 +386,12 @@ void OnIronSightsEnter()
         return;
     }
 
-    auto *settings = Settings::GetSingleton();
-
     if (HasExcludedOMOD())
     {
         return;
     }
 
-    float fovMult = info.scopeInit != -1.0f ? info.scopeInit : info.zoomData->zoomData.fovMult;
+    // float fovMult = info.scopeInit != -1.0f ? info.scopeInit : info.zoomData->zoomData.fovMult;
 
     // Re-enable later?
     /* if (fovMult < settings->minFovMult)
@@ -403,17 +400,27 @@ void OnIronSightsEnter()
     } */
 
     const auto key = MakeZoomKey(info);
-    g_zoomState.originalFovMult = fovMult;
+    auto *settings = Settings::GetSingleton();
     g_zoomState.cachedZoomData = info.zoomData;
     g_zoomState.activeKey = key;
     g_zoomState.isActive = true;
-    g_zoomState.scopeInit = info.scopeInit;
-    g_zoomState.scopeMin = info.scopeMin;
-    g_zoomState.scopeMax = info.scopeMax;
-    g_zoomState.scopeStep = info.scopeStep;
+    g_zoomState.scopeParams = info.scopeParams;
+    logger::debug("scopeParams: init: {:.3f}, min: {:.3f}, max: {:.3f}, step: {:.3f}, isValid: {}.", 
+        g_zoomState.scopeParams.init, g_zoomState.scopeParams.min, g_zoomState.scopeParams.max, 
+        g_zoomState.scopeParams.step, g_zoomState.scopeParams.isValid);
 
-    float minFov = std::max(g_zoomState.scopeMin != -1.0f ? g_zoomState.scopeMin : fovMult * settings->minZoomRatio, 1.0f);
-    float maxFov = g_zoomState.scopeMax != -1.0f ? g_zoomState.scopeMax : fovMult * settings->maxZoomRatio;
+    float minFov, maxFov;
+    if (g_zoomState.scopeParams.isValid) {
+        ScopeParams sp = g_zoomState.scopeParams;
+        g_zoomState.originalFovMult = sp.init;
+        minFov = sp.min;
+        maxFov = sp.max;
+    } else {
+        g_zoomState.originalFovMult = info.zoomData->zoomData.fovMult;
+        minFov = g_zoomState.originalFovMult * settings->minZoomRatio;
+        maxFov = g_zoomState.originalFovMult * settings->maxZoomRatio;
+    }
+
     float savedFovMult = 1.0f;
     bool legacyFallback = false;
     if (TryGetSavedZoom(key, savedFovMult, legacyFallback))
@@ -421,13 +428,13 @@ void OnIronSightsEnter()
         g_zoomState.currentFovMult = std::clamp(savedFovMult, minFov, maxFov);
         logger::debug("OnIronSightsEnter: restored saved={:.3f}, clamped={:.3f}, original={:.3f}, minFov={:.3f}, "
                       "maxFov={:.3f}, weaponFormID={:08X}, aimMode={}, scopeSig={:08X}, legacyFallback={}",
-                      savedFovMult, g_zoomState.currentFovMult, fovMult, minFov, maxFov, key.weaponFormID,
+                      savedFovMult, g_zoomState.currentFovMult, g_zoomState.originalFovMult, minFov, maxFov, key.weaponFormID,
                       GetAimModeName(g_currentAimMode), key.scopeOMODSignature, legacyFallback);
     }
     else
     {
-        if(info.scopeInit != -1.0f) {
-            g_zoomState.currentFovMult = info.scopeInit;
+        if (g_zoomState.scopeParams.isValid) {
+            g_zoomState.currentFovMult = g_zoomState.scopeParams.init;
         }
         else {
             switch (settings->startZoom)
@@ -440,18 +447,18 @@ void OnIronSightsEnter()
                     break;
                 default:
                     // fovMult cannot be lower than 1.0
-                    g_zoomState.currentFovMult = (std::max)(minFov, 1.0f);
+                    g_zoomState.currentFovMult = minFov > 1.0f ? minFov : 1.0f;
                     break;
             }
         }
         
         logger::debug("OnIronSightsEnter: no saved, start={:.3f}, original={:.3f}, minFov={:.3f}, maxFov={:.3f}, "
                       "weaponFormID={:08X}, aimMode={}, scopeSig={:08X}",
-                      g_zoomState.currentFovMult, fovMult, minFov, maxFov, key.weaponFormID,
+                      g_zoomState.currentFovMult, g_zoomState.originalFovMult, minFov, maxFov, key.weaponFormID,
                       GetAimModeName(g_currentAimMode), key.scopeOMODSignature);
     }
 
-    info.zoomData->zoomData.fovMult = g_zoomState.currentFovMult;
+    g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;
 }
 
 void OnIronSightsExit()
@@ -477,34 +484,52 @@ void OnScrollWheel(bool a_zoomOut)
         return;
     }
 
-    auto *settings = Settings::GetSingleton();
-
+    logger::debug("Zoom: beforeFovMult={:.3f}", g_zoomState.currentFovMult);
     if (a_zoomOut)
     {
         // fovMult cannot be lower than 1.0
-        float minFovMult = g_zoomState.scopeMin != -1.0f ? 
-            g_zoomState.scopeMin : 
-            g_zoomState.originalFovMult * settings->minZoomRatio;
-        minFovMult = std::max(minFovMult, 1.0f);
-        
-        float stepped = g_zoomState.scopeStep != -1.0f ? 
-            g_zoomState.currentFovMult - g_zoomState.scopeStep : 
-            g_zoomState.currentFovMult - settings->stepSize;
-        g_zoomState.currentFovMult = (std::max)(stepped, minFovMult);
+        float minFovMult = 1.0f, newFovMult;
+        if (g_zoomState.scopeParams.isValid) {
+            ScopeParams sp = g_zoomState.scopeParams;
+            if (sp.min > minFovMult) minFovMult = sp.min;
+            newFovMult = g_zoomState.currentFovMult - sp.step;
+            logger::debug("Zoom: step=-{:.3f}", sp.step);
+        } else {
+            auto *settings = Settings::GetSingleton();
+            if((g_zoomState.originalFovMult * settings->minZoomRatio) > minFovMult) 
+                    minFovMult = g_zoomState.originalFovMult * settings->minZoomRatio;
+            newFovMult = g_zoomState.currentFovMult - settings->stepSize;
+            logger::debug("Zoom: step=-{:.3f}", settings->stepSize);
+        }
+
+        if (newFovMult > minFovMult)
+            g_zoomState.currentFovMult = newFovMult;
+        else
+            g_zoomState.currentFovMult = minFovMult;
     }
     else
     {
-        float maxFovMult = g_zoomState.scopeMax != -1.0f ?
-            g_zoomState.scopeMax :
-            g_zoomState.originalFovMult * settings->maxZoomRatio;
-            float stepped = g_zoomState.scopeStep != -1.0f ? 
-                g_zoomState.currentFovMult + g_zoomState.scopeStep : 
-                g_zoomState.currentFovMult + settings->stepSize;
-        g_zoomState.currentFovMult = (std::min)(stepped, maxFovMult);
+        float maxFovMult, newFovMult;
+        if (g_zoomState.scopeParams.isValid) {
+            ScopeParams sp = g_zoomState.scopeParams;
+            maxFovMult = sp.max;
+            newFovMult = g_zoomState.currentFovMult + sp.step;
+            logger::debug("Zoom: step=+{:.3f}", sp.step);
+        } else {
+            auto *settings = Settings::GetSingleton();
+            maxFovMult = g_zoomState.originalFovMult * settings->maxZoomRatio;
+            newFovMult = g_zoomState.currentFovMult + settings->stepSize;
+            logger::debug("Zoom: step=+{:.3f}", settings->stepSize);
+        }
+        
+        if (newFovMult < maxFovMult) 
+            g_zoomState.currentFovMult = newFovMult;
+        else
+            g_zoomState.currentFovMult = maxFovMult;
     }
 
     g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;
-    logger::debug("Zoom: fovMult={:.3f} ({}x)", g_zoomState.currentFovMult, 1.0f / g_zoomState.currentFovMult);
+    logger::debug("Zoom: afterFovMult={:.3f}", g_zoomState.currentFovMult);
 }
 
 void ResetZoomState()
@@ -560,7 +585,7 @@ void F4SEAPI LoadCallback(const F4SE::SerializationInterface *a_intfc)
             std::uint32_t formID = 0;
             std::uint32_t aimMode = static_cast<std::uint32_t>(AimMode::kNormal);
             std::uint32_t scopeOMODSignature = 0;
-            float fovMult = 0.0f;
+            float fovMult = 1.0f;
 
             a_intfc->ReadRecordData(&formID, sizeof(formID));
             if (version == kCoSaveVersion)
