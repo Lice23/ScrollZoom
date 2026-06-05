@@ -310,10 +310,19 @@ WeaponZoomInfo GetEquippedWeaponZoomInfo()
         return {};
     }
 
-    std::string init, min, max, step;
+    std::string init, min, max, step, fixed;
     float initF = -1.0f, minF = -1.0f, maxF = -1.0f, stepF = -1.0f;
     instance->keywords->ForEachKeyword([&](const RE::BGSKeyword* a_keyword) {
         if(!init.empty() && !min.empty() && !max.empty() && !step.empty()) {
+            return RE::BSContainer::ForEachResult::kStop;
+        }
+
+        if(a_keyword->formEditorId.contains(ZOOM_KW_FIXED)) {
+            fixed = a_keyword->formEditorId;
+            initF = getFloatFromKeyword(fixed, ZOOM_KW_FIXED);
+            minF = initF;
+            maxF = minF;
+            stepF = 0.0f;
             return RE::BSContainer::ForEachResult::kStop;
         }
 

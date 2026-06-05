@@ -7,6 +7,7 @@ Currently, the keywords must have one of the following prefixes - referring to i
     const std::string ZOOM_KW_MAX = "dn_ScrollZoom_Max";
     const std::string ZOOM_KW_MIN = "dn_ScrollZoom_Min";
     const std::string ZOOM_KW_STEP = "dn_ScrollZoom_Step";
+    const std::string ZOOM_KW_FIXED = "dn_ScrollZoom_Fixed";
 
 Followed by a floating point number indicating it's value in the following fashion:
 
@@ -24,6 +25,7 @@ Examples:
    6.0x.
 - dn_ScrollZoom_Min_1_5 -> this means the min zoom for this scope is 1.5x.
 - dn_ScrollZoom_Step_2_0 -> this means the "step" in zoom for this scope is 2.0x.
+- dn_ScrollZoom_Fixed_2_5 -> indicates a fixed scope; this means the min, max, and init zoom are 2.5x and the step is 0.
 
 Make sure the step, max, and min values line up well to avoid inconsistencies when zooming in and out. 
 

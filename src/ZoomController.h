@@ -104,6 +104,7 @@ const std::string ZOOM_KW_INIT = "dn_ScrollZoom_Init";
 const std::string ZOOM_KW_MAX = "dn_ScrollZoom_Max";
 const std::string ZOOM_KW_MIN = "dn_ScrollZoom_Min";
 const std::string ZOOM_KW_STEP = "dn_ScrollZoom_Step";
+const std::string ZOOM_KW_FIXED = "dn_ScrollZoom_Fixed";
 
 float getFloatFromKeyword(const std::string& str, const std::string& kw);
 WeaponZoomInfo GetEquippedWeaponZoomInfo();
