@@ -317,8 +317,8 @@ WeaponZoomInfo GetEquippedWeaponZoomInfo()
             return RE::BSContainer::ForEachResult::kStop;
         }
 
-        if(a_keyword->formEditorId.contains(ZOOM_KW_FIXED)) {
-            fixed = a_keyword->formEditorId;
+        if(a_keyword->formEditorID.contains(ZOOM_KW_FIXED)) {
+            fixed = a_keyword->formEditorID;
             initF = getFloatFromKeyword(fixed, ZOOM_KW_FIXED);
             minF = initF;
             maxF = minF;
