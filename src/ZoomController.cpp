@@ -521,9 +521,6 @@ void OnScrollWheel(bool a_zoomOut)
             maxFovMult = g_zoomState.originalFovMult * settings->maxZoomRatio;
             step = settings->stepSize;
         }
-
-        // To make sure there isn't a 1% zoom still available due to the workaround above
-        step += 0.01f;
         
         logger::debug("Zoom: step=+{}", step);
         g_zoomState.currentFovMult = (std::min)(g_zoomState.currentFovMult + step, maxFovMult);
