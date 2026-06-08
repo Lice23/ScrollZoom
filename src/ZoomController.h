@@ -60,10 +60,10 @@ struct ScopeParams
     ScopeParams() {}
 
     ScopeParams(float initP, float minP, float maxP, float stepP) {
-        init = initP;
+        init = initP != -1.0f ? initP : minP; // If init is not defined, default to min as initZoom
         min = minP;
         max = maxP;
-        step = stepP;
+        step = stepP; 
         isValid = ((initP != -1.0f) && (minP != -1.0f) && (maxP != -1.0f) && (stepP != -1.0f));
     }
 };
