@@ -20,7 +20,7 @@ OR
 Examples:
 
  - dn_ScrollZoom_Init_1_0 -> this means the initial zoom for this scope
-   is 1.0x.
+   is 1.0x. this parameter is optional and defaults to min zoom.
  - dn_ScrollZoom_Max_6 -> this means the max zoom for this scope is
    6.0x.
 - dn_ScrollZoom_Min_1_5 -> this means the min zoom for this scope is 1.5x.
@@ -28,6 +28,25 @@ Examples:
 - dn_ScrollZoom_Fixed_2_5 -> indicates a fixed scope; this means the min, max, and init zoom are 2.5x and the step is 0.
 
 Make sure the step, max, and min values line up well to avoid inconsistencies when zooming in and out. 
+
+Some wide-spread scopes' example parameters:
+- ACOG (4x)
+    - dn_ScrollZoom_Fixed_4
+
+- Specter DR (1x/4x)
+    - dn_ScrollZoom_Min_1
+    - dn_ScrollZoom_Max_4
+    - dn_ScrollZoom_Step_3
+
+- Sig Tango6T (1-6x)
+    - dn_ScrollZoom_Min_1
+    - dn_ScrollZoom_Max_6
+    - dn_ScrollZoom_Step_1
+
+- Specter DR (1.5x/6x)
+    - dn_ScrollZoom_Min_1_5
+    - dn_ScrollZoom_Max_6
+    - dn_ScrollZoom_Step_4_5
 
 ## Requirements:
 https://github.com/EnclaveShrew/commonlibf4-unified/tree/main
@@ -78,4 +97,3 @@ Don't forget to copy the ScrollZoom.dll (and .ini in the root folder if you don'
 
 ### Current Known Issues:
 For some reason setting the fovMult to 1.0 doesn't update the fov ingame, so as a workaround the minimum fov is 1.01. Aside from that, it works as intended!
-I disabled the minimum fovMult check for now, but I might reenable it later, at least as a backup.
