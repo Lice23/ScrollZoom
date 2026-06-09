@@ -396,14 +396,6 @@ void OnIronSightsEnter()
         return;
     }
 
-    // float fovMult = info.scopeInit != -1.0f ? info.scopeInit : info.zoomData->zoomData.fovMult;
-
-    // Re-enable later?
-    /* if (fovMult < settings->minFovMult)
-    {
-        return;
-    } */
-
     const auto key = MakeZoomKey(info);
     auto *settings = Settings::GetSingleton();
     g_zoomState.cachedZoomData = info.zoomData;
@@ -423,6 +415,7 @@ void OnIronSightsEnter()
         maxFov = sp.max;
     } else {
         g_zoomState.originalFovMult = info.zoomData->zoomData.fovMult;
+        if (g_zoomState.originalFovMult < settings->minFovMult) return;
         minFov = g_zoomState.originalFovMult * settings->minZoomRatio;
         maxFov = g_zoomState.originalFovMult * settings->maxZoomRatio;
     }
