@@ -64,7 +64,7 @@ struct ScopeParams
         min = minP;
         max = maxP;
         step = stepP; 
-        isValid = ((initP != -1.0f) && (minP != -1.0f) && (maxP != -1.0f) && (stepP != -1.0f));
+        isValid = ((init != -1.0f) && (min != -1.0f) && (max != -1.0f) && (step != -1.0f));
     }
 };
 
