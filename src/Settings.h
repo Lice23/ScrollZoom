@@ -8,6 +8,10 @@
 
 namespace ScrollZoom
 {
+
+// https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+inline constexpr std::int32_t kMouseMiddleButton = 0x02;
+  
 struct Settings
 {
     float stepSize{0.5f};
@@ -15,6 +19,7 @@ struct Settings
     float maxZoomRatio{1.0f};
     std::int32_t startZoom{0};
     float minFovMult{3.0f};
+    std::int32_t toggleKey{kMouseMiddleButton};
     bool debugLogging{false};
 
     std::unordered_set<std::uint32_t> excludedOMODs;

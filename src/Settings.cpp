@@ -30,6 +30,7 @@ void Settings::Load()
     maxZoomRatio = static_cast<float>(ini.GetDoubleValue("General", "fMaxZoomRatio", 1.0));
     startZoom = static_cast<std::int32_t>(ini.GetLongValue("General", "iStartZoom", 0));
     minFovMult = static_cast<float>(ini.GetDoubleValue("General", "fMinFovMult", 3.0));
+    toggleKey = static_cast<std::int32_t>(ini.GetLongValue("General", "iToggleKey", kMouseMiddleButton));
     debugLogging = ini.GetBoolValue("General", "bDebugLogging", false);
 
     if (maxZoomRatio < minZoomRatio)
@@ -43,8 +44,8 @@ void Settings::Load()
     ParseExcludedOMODs(rawOMODs);
 
     logger::info("Settings loaded: stepSize={:.2f}, minZoomRatio={:.2f}, maxZoomRatio={:.2f}, startZoom={}, "
-                 "minFovMult={:.2f}, debugLogging={}",
-                 stepSize, minZoomRatio, maxZoomRatio, startZoom, minFovMult, debugLogging);
+                 "minFovMult={:.2f}, toggleKey={}, debugLogging={}",
+                 stepSize, minZoomRatio, maxZoomRatio, startZoom, minFovMult, toggleKey, debugLogging);
 }
 
 void Settings::ResolveExcludedOMODs()

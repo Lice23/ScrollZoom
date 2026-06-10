@@ -115,6 +115,7 @@ void RebaseZoomForAimMode(AimMode a_mode);
 void OnIronSightsEnter();
 void OnIronSightsExit();
 void OnScrollWheel(bool a_zoomOut);
+void OnToggleKey();
 void ResetZoomState();
 
 void F4SEAPI SaveCallback(const F4SE::SerializationInterface *a_intfc);

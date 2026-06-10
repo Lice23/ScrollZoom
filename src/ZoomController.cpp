@@ -482,7 +482,7 @@ void OnScrollWheel(bool a_zoomOut)
         return;
     }
 
-    logger::debug("Zoom: beforeFovMult={}", g_zoomState.currentFovMult);
+    logger::debug("OnScrollWheel: beforeFovMult={}", g_zoomState.currentFovMult);
     if (a_zoomOut)
     {
         float minFovMult, step;
@@ -499,7 +499,7 @@ void OnScrollWheel(bool a_zoomOut)
         // setting fov to 1.0f doesn't work for some reason, blame bethesda (or my inability to code)
         minFovMult = (std::max)(minFovMult, 1.01f);
 
-        logger::debug("Zoom: step=-{}", step);
+        logger::debug("OnScrollWheel: step=-{}", step);
         g_zoomState.currentFovMult = (std::max)(g_zoomState.currentFovMult - step, minFovMult);
     }
     else
@@ -515,12 +515,45 @@ void OnScrollWheel(bool a_zoomOut)
             step = settings->stepSize;
         }
         
-        logger::debug("Zoom: step=+{}", step);
+        logger::debug("OnScrollWheel: step=+{}", step);
         g_zoomState.currentFovMult = (std::min)(g_zoomState.currentFovMult + step, maxFovMult);
     }
 
     g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;
-    logger::debug("Zoom: afterFovMult={}", g_zoomState.currentFovMult);
+    logger::debug("OnScrollWheel: afterFovMult={}", g_zoomState.currentFovMult);
+}
+
+void OnToggleKey() {
+    if (!g_zoomState.isActive || !g_zoomState.cachedZoomData)
+    {
+        return;
+    }
+
+    logger::debug("OnToggleKey: beforeFovMult={}", g_zoomState.currentFovMult);
+
+    float maxFovMult, minFovMult, step;
+    if (g_zoomState.scopeParams.isValid) {
+        ScopeParams sp = g_zoomState.scopeParams;
+        maxFovMult = sp.max;
+        minFovMult = sp.min;
+        step = sp.step;
+    } else {
+        auto *settings = Settings::GetSingleton();
+        maxFovMult = g_zoomState.originalFovMult * settings->maxZoomRatio;
+        minFovMult = g_zoomState.originalFovMult * settings->minZoomRatio;
+        step = settings->stepSize;
+    }
+
+    if (g_zoomState.currentFovMult == maxFovMult) {
+        // If at max, cycle back to min
+        g_zoomState.currentFovMult = (std::max)(minFovMult, 1.01f);
+    } else {
+        // Else, add one step of zoom
+        g_zoomState.currentFovMult = (std::min)(g_zoomState.currentFovMult + step, maxFovMult);
+    }
+
+    g_zoomState.cachedZoomData->zoomData.fovMult = g_zoomState.currentFovMult;
+    logger::debug("OnToggleKey: afterFovMult={}", g_zoomState.currentFovMult);
 }
 
 void ResetZoomState()

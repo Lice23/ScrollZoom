@@ -1,5 +1,6 @@
 #include "InputHandler.h"
 #include "ZoomController.h"
+#include "Settings.h"
 
 namespace ScrollZoom
 {
@@ -26,19 +27,21 @@ class ScrollZoomHandler : public RE::PlayerInputHandler
             return;
         }
 
-        if (*a_event->device != RE::INPUT_DEVICE::kMouse)
+        /* if (*a_event->device != RE::INPUT_DEVICE::kMouse)
         {
             return;
-        }
-
-        std::int32_t id = a_event->QIDCode();
-        if (id != kMouseWheelUp && id != kMouseWheelDown)
-        {
-            return;
-        }
+        } */
 
         auto *player = RE::PlayerCharacter::GetSingleton();
         if (!player)
+        {
+            return;
+        }
+
+        std::int32_t toggleKey = Settings::GetSingleton()->toggleKey;
+        std::int32_t id = a_event->QIDCode();
+        // logger::debug("OnButtonEvent: toggleKey: {}; eventId: {}", toggleKey, id);
+        if (id != kMouseWheelUp && id != kMouseWheelDown && id != toggleKey)
         {
             return;
         }
@@ -58,7 +61,8 @@ class ScrollZoomHandler : public RE::PlayerInputHandler
             }
         }
 
-        OnScrollWheel(id == kMouseWheelDown);
+        if(id == toggleKey) OnToggleKey();
+        else OnScrollWheel(id == kMouseWheelDown);
     }
 
     void PerFrameUpdate() override
